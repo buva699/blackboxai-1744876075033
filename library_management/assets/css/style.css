@@ -1,0 +1,208 @@
+/* Custom styles for Library Management System */
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Table styles */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table.sortable th.sortable {
+    position: relative;
+    cursor: pointer;
+    padding-right: 1.5rem;
+}
+
+table.sortable th.sortable::after {
+    content: '↕';
+    position: absolute;
+    right: 0.5rem;
+    color: #718096;
+}
+
+table.sortable th.sort-asc::after {
+    content: '↑';
+    color: #2563eb;
+}
+
+table.sortable th.sort-desc::after {
+    content: '↓';
+    color: #2563eb;
+}
+
+/* Form styles */
+.form-input:focus {
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.form-input.error {
+    border-color: #ef4444;
+}
+
+.form-input.error:focus {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+/* Modal animation */
+.modal {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Toast animation */
+.toast {
+    transition: transform 0.3s ease-in-out;
+}
+
+.toast.hidden {
+    transform: translateY(100%);
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Button styles */
+.btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-badge.inactive {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.status-badge.borrowed {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-badge.overdue {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Search input */
+.search-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0.75rem center;
+    background-size: 1.25rem;
+    padding-left: 2.5rem;
+}
+
+/* Loading spinner */
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 3px solid #3b82f6;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Tooltip */
+.tooltip {
+    position: relative;
+}
+
+.tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.25rem 0.5rem;
+    background-color: #1f2937;
+    color: white;
+    font-size: 0.75rem;
+    border-radius: 0.25rem;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease-in-out;
+}
+
+.tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .print-break-inside-avoid {
+        break-inside: avoid;
+    }
+
+    .print-break-before {
+        break-before: page;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .table-container {
+        margin: 0 -1rem;
+    }
+
+    .card {
+        margin: 0 -1rem;
+        border-radius: 0;
+    }
+}
