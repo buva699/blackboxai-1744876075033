@@ -1,204 +1,201 @@
 <?php
-/**
- * Common utility functions for the Library Management System
- */
-
-/**
- * Sanitize user input
- * @param string $input The input to sanitize
- * @return string Sanitized input
- */
-function sanitize_input($input) {
-    global $conn;
-    return mysqli_real_escape_string($conn, trim($input));
-}
-
-/**
- * Format date to readable format
- * @param string $date Date string
- * @return string Formatted date
- */
-function format_date($date) {
-    return date('M d, Y', strtotime($date));
-}
-
-/**
- * Calculate fine for overdue books
- * @param string $due_date Due date
- * @return float Fine amount
- */
-function calculate_fine($due_date) {
-    $today = new DateTime();
-    $due = new DateTime($due_date);
-    if ($today > $due) {
-        $diff = $today->diff($due);
-        $days = $diff->days;
-        // Get fine rate from settings
-        global $conn;
-        $result = $conn->query("SELECT fine_per_day, grace_period_days FROM fine_settings LIMIT 1");
-        $settings = $result->fetch_assoc();
-        $days = max(0, $days - $settings['grace_period_days']);
-        return $days * $settings['fine_per_day'];
-    }
-    return 0;
-}
-
-/**
- * Check if a book is available for borrowing
- * @param int $book_id Book ID
- * @return bool True if available, false otherwise
- */
-function is_book_available($book_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT available_copies FROM books WHERE id = ?");
-    $stmt->bind_param("i", $book_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $book = $result->fetch_assoc();
-    return $book['available_copies'] > 0;
-}
-
-/**
- * Check if a member has overdue books
- * @param int $member_id Member ID
- * @return bool True if has overdue books, false otherwise
- */
-function has_overdue_books($member_id) {
-    global $conn;
-    $stmt = $conn->prepare("SELECT COUNT(*) as count FROM borrowings WHERE member_id = ? AND status = 'overdue'");
-    $stmt->bind_param("i", $member_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $count = $result->fetch_assoc();
-    return $count['count'] > 0;
-}
-
-/**
- * Get member borrowing statistics
- * @param int $member_id Member ID
- * @return array Statistics array
- */
-function get_member_stats($member_id) {
-    global $conn;
-    $stats = [
-        'total_borrowed' => 0,
-        'currently_borrowed' => 0,
-        'overdue' => 0,
-        'total_fines' => 0
-    ];
-    
-    $stmt = $conn->prepare("
-        SELECT 
-            COUNT(*) as total_borrowed,
-            SUM(CASE WHEN status = 'borrowed' THEN 1 ELSE 0 END) as currently_borrowed,
-            SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue,
-            SUM(fine_amount) as total_fines
-        FROM borrowings 
-        WHERE member_id = ?");
-    $stmt->bind_param("i", $member_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $data = $result->fetch_assoc();
-    
-    $stats['total_borrowed'] = $data['total_borrowed'];
-    $stats['currently_borrowed'] = $data['currently_borrowed'];
-    $stats['overdue'] = $data['overdue'];
-    $stats['total_fines'] = $data['total_fines'];
-    
-    return $stats;
-}
-
-/**
- * Get book borrowing statistics
- * @param int $book_id Book ID
- * @return array Statistics array
- */
-function get_book_stats($book_id) {
-    global $conn;
-    $stats = [
-        'total_borrowed' => 0,
-        'currently_borrowed' => 0,
-        'available_copies' => 0
-    ];
-    
-    $stmt = $conn->prepare("
-        SELECT 
-            (SELECT COUNT(*) FROM borrowings WHERE book_id = ?) as total_borrowed,
-            (SELECT COUNT(*) FROM borrowings WHERE book_id = ? AND status = 'borrowed') as currently_borrowed,
-            available_copies
-        FROM books 
-        WHERE id = ?");
-    $stmt->bind_param("iii", $book_id, $book_id, $book_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $data = $result->fetch_assoc();
-    
-    $stats['total_borrowed'] = $data['total_borrowed'];
-    $stats['currently_borrowed'] = $data['currently_borrowed'];
-    $stats['available_copies'] = $data['available_copies'];
-    
-    return $stats;
-}
-
-/**
- * Generate a unique member ID
- * @param string $type Member type (student/faculty)
- * @return string Unique member ID
- */
-function generate_member_id($type) {
-    global $conn;
-    $prefix = strtoupper(substr($type, 0, 3));
-    $result = $conn->query("SELECT MAX(CAST(SUBSTRING(member_id, 4) AS UNSIGNED)) as max_id FROM members WHERE member_type = '$type'");
-    $data = $result->fetch_assoc();
-    $next_id = ($data['max_id'] ?? 0) + 1;
-    return $prefix . str_pad($next_id, 3, '0', STR_PAD_LEFT);
-}
-
-/**
- * Log system activity
- * @param string $action Action performed
- * @param string $details Action details
- * @param int $user_id User ID who performed the action
- */
-function log_activity($action, $details, $user_id) {
-    global $conn;
-    $stmt = $conn->prepare("INSERT INTO activity_log (action, details, user_id) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $action, $details, $user_id);
-    $stmt->execute();
-}
-
-/**
- * Format currency amount
- * @param float $amount Amount to format
- * @return string Formatted amount
- */
-function format_currency($amount) {
-    return '$' . number_format($amount, 2);
-}
-
-/**
- * Check if user has permission for an action
- * @param string $action Action to check
- * @return bool True if permitted, false otherwise
- */
-function has_permission($action) {
-    // For now, all logged-in users have all permissions
+// Authentication functions
+function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
 
-/**
- * Send email notification
- * @param string $to Recipient email
- * @param string $subject Email subject
- * @param string $message Email message
- * @return bool True if sent successfully, false otherwise
- */
-function send_notification($to, $subject, $message) {
-    // Email headers
-    $headers = "MIME-Version: 1.0" . "\r\n";
-    $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-    $headers .= 'From: SDCKL Library <library@sdckl.edu>' . "\r\n";
+function requireLogin() {
+    if (!isLoggedIn()) {
+        header("Location: index.php");
+        exit();
+    }
+}
+
+function logout() {
+    session_start();
+    session_destroy();
+    header("Location: index.php");
+    exit();
+}
+
+// Date and time functions
+function formatDate($date) {
+    return date('Y-m-d', strtotime($date));
+}
+
+function formatDateTime($datetime) {
+    return date('Y-m-d H:i:s', strtotime($datetime));
+}
+
+function calculateDaysDifference($date1, $date2) {
+    $diff = strtotime($date2) - strtotime($date1);
+    return floor($diff / (60 * 60 * 24));
+}
+
+// Validation functions
+function validateEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL);
+}
+
+function validateISBN($isbn) {
+    return preg_match('/^(?=(?:\D*\d){10}(?:(?:\D*\d){3})?$)[\d-]+$/', $isbn);
+}
+
+function validatePhone($phone) {
+    return preg_match('/^[0-9]{10,15}$/', $phone);
+}
+
+// Formatting functions
+function formatMoney($amount) {
+    return number_format($amount, 2);
+}
+
+function formatStatus($status) {
+    $statusClasses = [
+        'active' => 'bg-green-100 text-green-800',
+        'inactive' => 'bg-red-100 text-red-800',
+        'borrowed' => 'bg-blue-100 text-blue-800',
+        'returned' => 'bg-gray-100 text-gray-800',
+        'overdue' => 'bg-yellow-100 text-yellow-800'
+    ];
     
-    // Send email
-    return mail($to, $subject, $message, $headers);
+    $class = $statusClasses[$status] ?? 'bg-gray-100 text-gray-800';
+    return sprintf('<span class="px-2 py-1 rounded-full text-sm %s">%s</span>', 
+        $class, 
+        ucfirst($status)
+    );
+}
+
+// Flash messages
+function setFlashMessage($type, $message) {
+    $_SESSION['flash'] = [
+        'type' => $type,
+        'message' => $message
+    ];
+}
+
+function getFlashMessage() {
+    if (isset($_SESSION['flash'])) {
+        $flash = $_SESSION['flash'];
+        unset($_SESSION['flash']);
+        return $flash;
+    }
+    return null;
+}
+
+// Pagination helper
+function getPaginationLinks($currentPage, $totalPages, $urlPattern) {
+    $links = [];
+    
+    if ($currentPage > 1) {
+        $links[] = [
+            'page' => $currentPage - 1,
+            'url' => sprintf($urlPattern, $currentPage - 1),
+            'label' => 'Previous'
+        ];
+    }
+    
+    for ($i = max(1, $currentPage - 2); $i <= min($totalPages, $currentPage + 2); $i++) {
+        $links[] = [
+            'page' => $i,
+            'url' => sprintf($urlPattern, $i),
+            'label' => $i,
+            'current' => $i === $currentPage
+        ];
+    }
+    
+    if ($currentPage < $totalPages) {
+        $links[] = [
+            'page' => $currentPage + 1,
+            'url' => sprintf($urlPattern, $currentPage + 1),
+            'label' => 'Next'
+        ];
+    }
+    
+    return $links;
+}
+
+// File upload helper
+function handleFileUpload($file, $allowedTypes = ['image/jpeg', 'image/png'], $maxSize = 5242880) {
+    $errors = [];
+    
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $errors[] = 'File upload failed';
+        return ['success' => false, 'errors' => $errors];
+    }
+    
+    if (!in_array($file['type'], $allowedTypes)) {
+        $errors[] = 'Invalid file type';
+    }
+    
+    if ($file['size'] > $maxSize) {
+        $errors[] = 'File size too large';
+    }
+    
+    if (!empty($errors)) {
+        return ['success' => false, 'errors' => $errors];
+    }
+    
+    $fileName = uniqid() . '_' . basename($file['name']);
+    $uploadPath = __DIR__ . '/../uploads/' . $fileName;
+    
+    if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
+        $errors[] = 'Failed to move uploaded file';
+        return ['success' => false, 'errors' => $errors];
+    }
+    
+    return [
+        'success' => true,
+        'fileName' => $fileName,
+        'path' => $uploadPath
+    ];
+}
+
+// Search helper
+function buildSearchQuery($table, $fields, $keyword) {
+    $conditions = [];
+    $params = [];
+    
+    foreach ($fields as $field) {
+        $conditions[] = "$field LIKE ?";
+        $params[] = "%$keyword%";
+    }
+    
+    $sql = "SELECT * FROM $table WHERE " . implode(' OR ', $conditions);
+    return ['sql' => $sql, 'params' => $params];
+}
+
+// Generate member ID
+function generateMemberId($prefix, $currentCount) {
+    return sprintf('%s%04d', $prefix, $currentCount + 1);
+}
+
+// Calculate fine amount
+function calculateFine($dueDate, $returnDate = null, $finePerDay = 1.00, $gracePeriod = 0) {
+    if (!$returnDate) {
+        $returnDate = date('Y-m-d');
+    }
+    
+    $daysLate = calculateDaysDifference($dueDate, $returnDate) - $gracePeriod;
+    return $daysLate > 0 ? $daysLate * $finePerDay : 0;
+}
+
+// Security functions
+function generateCSRFToken() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+function validateCSRFToken($token) {
+    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+// API Response helper
+function jsonResponse($data, $status = 200) {
+    header('Content-Type: application/json');
+    http_response_code($status);
+    echo json_encode($data);
+    exit();
 }
