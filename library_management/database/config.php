@@ -1,38 +1,37 @@
 <?php
+// Database configuration
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'sdckl_library');
 
-// Create connection
-$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+// Create database connection
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS);
 
 // Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Set charset to utf8mb4
-$conn->set_charset("utf8mb4");
-
-// Function to handle database errors
-function handleDatabaseError($error) {
-    error_log("Database Error: " . $error);
-    return "An error occurred. Please try again later.";
+// Create database if not exists
+$sql = "CREATE DATABASE IF NOT EXISTS " . DB_NAME;
+if ($conn->query($sql) === FALSE) {
+    die("Error creating database: " . $conn->error);
 }
 
-// Function to sanitize input
-function sanitizeInput($input) {
+// Select the database
+$conn->select_db(DB_NAME);
+
+// Helper functions
+function sanitizeInput($data) {
     global $conn;
-    return mysqli_real_escape_string($conn, trim($input));
+    return $conn->real_escape_string(trim($data));
 }
 
-// Function to hash passwords
-function hashPassword($password) {
-    return password_hash($password, PASSWORD_DEFAULT);
-}
-
-// Function to verify passwords
 function verifyPassword($password, $hash) {
     return password_verify($password, $hash);
+}
+
+function hashPassword($password) {
+    return password_hash($password, PASSWORD_DEFAULT);
 }
