@@ -222,4 +222,19 @@ class Borrowing extends Model {
                 WHERE b.id = ?";
         return $this->db->fetchOne($sql, [$borrowingId]);
     }
+
+    /**
+     * Get recent borrowings with book and member details
+     */
+    public function getRecentBorrowings($limit = 5) {
+        $sql = "SELECT b.*, 
+                    m.full_name as member_name, 
+                    bk.title as book_title 
+                FROM {$this->table} b 
+                JOIN members m ON b.member_id = m.id 
+                JOIN books bk ON b.book_id = bk.id 
+                ORDER BY b.created_at DESC 
+                LIMIT ?";
+        return $this->db->fetchAll($sql, [$limit]);
+    }
 }
