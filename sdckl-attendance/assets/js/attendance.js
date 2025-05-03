@@ -42,21 +42,33 @@ const totalRecords = document.getElementById('totalRecords');
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
-    // Load attendance data from localStorage if available
-    const storedAttendance = localStorage.getItem('attendance');
-    if (storedAttendance) {
-        const attendanceData = JSON.parse(storedAttendance);
-        // Merge with sample data
-        sampleData = [...sampleData, ...attendanceData];
-        filteredData = [...sampleData];
-    }
-    
-    // Set default date to today
+    // Fetch attendance data from API
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
-    
-    updateTable();
-    showLowAttendanceNotifications();
+
+    fetch(`api.php?path=attendance&date=${today}`)
+        .then(response => response.json())
+        .then(data => {
+            sampleData = data.map(item => ({
+                studentId: item.student_id,
+                name: item.full_name,
+                class: item.class_name,
+                date: item.date,
+                time: item.time_in || '',
+                status: item.status,
+                remarks: item.notes || ''
+            }));
+            filteredData = [...sampleData];
+            updateTable();
+            showLowAttendanceNotifications();
+        })
+        .catch(error => {
+            console.error('Error fetching attendance data:', error);
+            // Fallback to sampleData if needed
+            filteredData = [...sampleData];
+            updateTable();
+            showLowAttendanceNotifications();
+        });
 });
 
 // Show notifications for students with attendance below 80%
