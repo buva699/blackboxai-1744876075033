@@ -6,7 +6,8 @@ let sampleData = [
         class: "10A",
         date: "2024-01-15",
         time: "08:30:00",
-        status: "present"
+        status: "present",
+        remarks: ""
     },
     {
         studentId: "1002",
@@ -14,7 +15,8 @@ let sampleData = [
         class: "10A",
         date: "2024-01-15",
         time: "08:32:00",
-        status: "present"
+        status: "present",
+        remarks: ""
     },
     {
         studentId: "1003",
@@ -22,7 +24,8 @@ let sampleData = [
         class: "10B",
         date: "2024-01-15",
         time: "08:45:00",
-        status: "late"
+        status: "late",
+        remarks: "Arrived late due to traffic"
     }
 ];
 
@@ -53,7 +56,57 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('date').value = today;
     
     updateTable();
+    showLowAttendanceNotifications();
 });
+
+// Show notifications for students with attendance below 80%
+function showLowAttendanceNotifications() {
+    const notificationArea = document.getElementById('notificationArea');
+    if (!notificationArea) return;
+
+    // Calculate attendance percentage for each student
+    const attendanceCounts = {};
+    sampleData.forEach(record => {
+        if (!attendanceCounts[record.studentId]) {
+            attendanceCounts[record.studentId] = { present: 0, total: 0, name: record.name };
+        }
+        if (record.status === 'present' || record.status === 'late') {
+            attendanceCounts[record.studentId].present++;
+        }
+        attendanceCounts[record.studentId].total++;
+    });
+
+    // Filter students below 80%
+    const lowAttendanceStudents = Object.entries(attendanceCounts)
+        .filter(([_, counts]) => (counts.present / counts.total) * 100 < 80)
+        .map(([id, counts]) => ({ id, name: counts.name, percentage: ((counts.present / counts.total) * 100).toFixed(2) }));
+
+    if (lowAttendanceStudents.length === 0) {
+        notificationArea.innerHTML = `
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                <strong class="font-bold">Good job!</strong>
+                <span class="block sm:inline">All students have attendance above 80%.</span>
+            </div>
+        `;
+        return;
+    }
+
+    // Build notification list
+    let notificationHTML = `
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong class="font-bold">Attendance Alert!</strong>
+            <span class="block sm:inline">The following students have attendance below 80% and may not be eligible for the SIT exam:</span>
+            <ul class="mt-2 list-disc list-inside">
+    `;
+
+    lowAttendanceStudents.forEach(student => {
+        notificationHTML += `<li>${student.name} (ID: ${student.id}) - ${student.percentage}% attendance</li>`;
+    });
+
+    notificationHTML += '</ul></div>';
+
+    notificationArea.innerHTML = notificationHTML;
+}
 
 // Apply filters
 function applyFilters() {
@@ -83,11 +136,31 @@ function updateTable() {
     const end = start + recordsPerPage;
     const pageData = filteredData.slice(start, end);
 
+    // Calculate attendance percentage and eligibility for each student
+    // For demo, we calculate based on sampleData counts
+    const attendanceCounts = {};
+    sampleData.forEach(record => {
+        if (!attendanceCounts[record.studentId]) {
+            attendanceCounts[record.studentId] = { present: 0, total: 0 };
+        }
+        if (record.status === 'present' || record.status === 'late') {
+            attendanceCounts[record.studentId].present++;
+        }
+        attendanceCounts[record.studentId].total++;
+    });
+
     // Clear existing rows
     tableBody.innerHTML = '';
 
     // Add data rows
     pageData.forEach(record => {
+        const counts = attendanceCounts[record.studentId] || { present: 0, total: 1 };
+        const attendancePercentage = (counts.present / counts.total) * 100;
+        const eligible = attendancePercentage >= 80 ? 'Eligible' : 'Not Eligible';
+        const eligibilityBadge = eligible === 'Eligible' 
+            ? '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Eligible</span>'
+            : '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Not Eligible</span>';
+
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -107,6 +180,12 @@ function updateTable() {
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 ${getStatusBadge(record.status)}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${record.remarks || ''}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                ${eligibilityBadge}
             </td>
         `;
         tableBody.appendChild(row);
@@ -136,7 +215,7 @@ function nextPage() {
 
 // Export data to CSV
 function exportData() {
-    const headers = ['Student ID', 'Name', 'Class', 'Date', 'Time', 'Status'];
+    const headers = ['Student ID', 'Name', 'Class', 'Date', 'Time', 'Status', 'Remarks'];
     const csvContent = [
         headers.join(','),
         ...filteredData.map(record => [
@@ -145,9 +224,11 @@ function exportData() {
             record.class,
             record.date,
             record.time,
-            record.status
+            record.status,
+            `"${(record.remarks || '').replace(/"/g, '""')}"`
         ].join(','))
     ].join('\n');
+
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
