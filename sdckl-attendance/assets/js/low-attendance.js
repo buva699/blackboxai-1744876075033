@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    fetch('api.php?path=attendance')
+    // Fetch attendance data for a fixed sample date for testing
+    fetch('api.php?path=attendance&date=2024-01-15')
         .then(response => response.json())
         .then(data => {
+            console.log('Fetched attendance data:', data); // Debug log
             const attendanceCounts = {};
             data.forEach(record => {
                 if (!attendanceCounts[record.student_id]) {
