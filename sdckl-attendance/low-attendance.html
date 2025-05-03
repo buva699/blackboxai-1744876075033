@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SDCKL Attendance System - Low Attendance Students</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fff5f5; /* light red background */
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-red-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-red-600 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-fingerprint text-white text-2xl mr-2"></i>
+                        <span class="font-bold text-xl text-white">SDCKL</span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="dashboard.html" class="border-transparent text-white hover:border-red-300 hover:text-red-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Dashboard
+                        </a>
+                        <a href="biometric.html" class="border-transparent text-white hover:border-red-300 hover:text-red-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Biometric
+                        </a>
+                        <a href="attendance.html" class="border-transparent text-white hover:border-red-300 hover:text-red-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Attendance
+                        </a>
+                        <a href="students.html" class="border-transparent text-white hover:border-red-300 hover:text-red-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Students
+                        </a>
+                        <a href="low-attendance.html" class="border-white text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Low Attendance
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button onclick="logout()" class="ml-4 px-4 py-2 text-sm font-medium text-white hover:text-red-200">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg p-6">
+            <h1 class="text-2xl font-bold text-red-900 mb-4">Students with Low Attendance</h1>
+            <p class="mb-6 text-red-700">Students with attendance below 80% who may not be eligible for the SIT exam.</p>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-red-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-red-700 uppercase tracking-wider">Student ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-red-700 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-red-700 uppercase tracking-wider">Attendance %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lowAttendanceTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="assets/js/low-attendance.js"></script>
+</body>
+</html>
