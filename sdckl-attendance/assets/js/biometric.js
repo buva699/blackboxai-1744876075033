@@ -74,6 +74,19 @@ async function captureImage() {
         const studentId = Math.floor(Math.random() * 1000) + 1; // Simulate student ID
         const now = new Date();
         lastScanElement.textContent = `Student ID ${studentId} - ${now.toLocaleTimeString()}`;
+
+        // Determine late threshold (hardcoded for now)
+        const lateThreshold = new Date();
+        lateThreshold.setHours(8, 30, 0, 0); // 08:30:00
+
+        let status = 'present';
+        let remarks = '';
+
+        if (now > lateThreshold) {
+            status = 'late';
+            remarks = prompt('You are marked as late. Please enter remarks:', '') || '';
+        }
+
         showStatus('Attendance marked successfully!', 'success');
         
         // Store attendance in localStorage
@@ -81,7 +94,8 @@ async function captureImage() {
         attendance.push({
             studentId,
             timestamp: now.toISOString(),
-            status: 'present'
+            status,
+            remarks
         });
         localStorage.setItem('attendance', JSON.stringify(attendance));
     } else {
